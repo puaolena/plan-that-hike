@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pack for This Hike — Personalized Day Hike Packing Assistant</title>
+    <meta name="description" content="Pack for This Hike helps day hikers build a safe, personalized gear checklist based on trail facts, live weather, and your hiking preferences.">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="logo">
+            <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2L2 22h20L12 2z"/>
+                <path d="M12 18V8"/>
+                <path d="M12 18l-3-3"/>
+                <path d="M12 18l3-3"/>
+            </svg>
+            <div class="logo-text">
+                <h1>Pack for This Hike</h1>
+                <span class="logo-subtitle">Nature, Terrain & Climate Aware Planner</span>
+            </div>
+        </div>
+        <div class="api-key-status" id="apiKeyStatus">
+            <span class="status-indicator yellow" id="statusDot"></span>
+            <span class="status-text" id="statusText">Checking API Key...</span>
+            <button class="settings-btn" id="openSettingsBtn" aria-label="Open Settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="settings-icon">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Progress Tracker -->
+    <div class="progress-tracker" id="progressTracker">
+        <div class="progress-step active" id="step1">
+            <div class="step-bubble"><span>1</span></div>
+            <span class="step-label">Select Trail</span>
+        </div>
+        <div class="progress-line" id="line1"></div>
+        <div class="progress-step" id="step2">
+            <div class="step-bubble"><span>2</span></div>
+            <span class="step-label">Refine Details</span>
+        </div>
+        <div class="progress-line" id="line2"></div>
+        <div class="progress-step" id="step3">
+            <div class="step-bubble"><span>3</span></div>
+            <span class="step-label">Gear Guide</span>
+        </div>
+    </div>
+
+    <main class="app-container">
+        <!-- API KEY MODAL -->
+        <div class="modal-backdrop hidden" id="settingsModal">
+            <div class="modal-card">
+                <h3>Gemini API Settings</h3>
+                <p>The application requires a Gemini API Key to run its AI packing assistant. You can get one from the <a href="https://aistudio.google.com/app/api-keys" target="_blank" rel="noopener">Google AI Studio</a>.</p>
+                
+                <div class="input-group">
+                    <label for="apiKeyInput">Gemini API Key</label>
+                    <input type="password" id="apiKeyInput" placeholder="Enter AI Studio API Key...">
+                    <small class="help-text">Your key is saved locally in your browser's session storage and is not stored permanently on our servers.</small>
+                </div>
+                
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" id="closeSettingsBtn">Cancel</button>
+                    <button class="btn btn-primary" id="saveSettingsBtn">Save Key</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-layout">
+            <!-- LEFT COLUMN: Inputs and Facts -->
+            <section class="panel left-panel">
+                <!-- STEP 1: Search -->
+                <div class="card" id="searchCard">
+                    <h2>Where are you hiking?</h2>
+                    <p class="subtitle">Enter a trailhead or destination (try <strong>Mission Peak</strong>, <strong>Henry Cowell</strong>, or <strong>Yosemite Eagle Peak</strong> for rich mock data, or search any other trail!)</p>
+                    
+                    <form id="searchForm" class="search-form">
+                        <div class="search-input-wrapper">
+                            <input type="text" id="destinationInput" placeholder="Search trailhead, park, or trail name..." required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-search" id="searchBtn">
+                            <span class="btn-text">Fetch Trail Facts</span>
+                            <span class="spinner hidden" id="searchSpinner"></span>
+                        </button>
+                    </form>
+
+                    <!-- Ambiguity Panel -->
+                    <div class="ambiguity-panel hidden" id="ambiguityPanel">
+                        <p class="warning-title">Multiple trails found. Did you mean one of these?</p>
+                        <div class="suggestion-list" id="suggestionList"></div>
+                    </div>
+                </div>
+
+                <!-- STEP 2: Trail Facts & Follow-up Questions (Editable) -->
+                <div class="card hidden" id="factsCard">
+                    <div class="card-header">
+                        <h2>Trail Details &amp; Hiking Conditions</h2>
+                        <span class="badge badge-fetched" id="factsSourceBadge">Fetched facts</span>
+                    </div>
+                    <p class="subtitle">Please review and edit the trail facts below if necessary, then answer a few quick questions about your hike.</p>
+
+                    <!-- ═══ WEATHER STATUS BANNERS ═══ -->
+                    <!-- Weather Timeout Banner -->
+                    <div class="status-banner banner-timeout hidden" id="weatherTimeoutBanner">
+                        <div class="banner-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        </div>
+                        <div class="banner-body">
+                            <strong>Weather service timed out</strong>
+                            <p id="weatherTimeoutMsg">Unable to reach weather service.</p>
+                        </div>
+                        <button class="btn-retry" id="retryWeatherBtn" type="button">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg>
+                            <span id="retryBtnLabel">Retry</span>
+                        </button>
+                    </div>
+
+                    <!-- Weather Failed Banner -->
+                    <div class="status-banner banner-fail hidden" id="weatherFailBanner">
+                        <div class="banner-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        </div>
+                        <div class="banner-body">
+                            <strong>Weather data unavailable</strong>
+                            <p>No weather match was found for this destination. Please enter an estimate below, or skip and continue conservatively.</p>
+                        </div>
+                    </div>
+
+                    <!-- Weather Stale Banner -->
+                    <div class="status-banner banner-stale hidden" id="weatherStaleBanner">
+                        <div class="banner-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        </div>
+                        <div class="banner-body">
+                            <strong>Weather data may be stale</strong>
+                            <p id="weatherStaleMsg">Weather data is older than 2 hours. Conditions may have changed. Recommendations will carry lower confidence.</p>
+                        </div>
+                    </div>
+
+                    <!-- Missing Trail Banner -->
+                    <div class="status-banner banner-missing hidden" id="trailMissingBanner">
+                        <div class="banner-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                        </div>
+                        <div class="banner-body">
+                            <strong>Trail not found in our database</strong>
+                            <p>We couldn't find matching data for this destination. Please fill in the trail details manually below. Recommendations will be labeled as lower confidence.</p>
+                        </div>
+                    </div>
+                    
+                    <form id="generateForm">
+                        <div class="facts-editor-grid">
+                            <div class="input-group">
+                                <label for="factName">Trail/Park Name</label>
+                                <input type="text" id="factName" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="factDistance">Roundtrip Distance (miles)</label>
+                                <input type="number" id="factDistance" step="0.1" min="0.1" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="factElevation">Elevation Gain (feet)</label>
+                                <input type="number" id="factElevation" step="10" min="0" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="factTrailhead">Trailhead Location</label>
+                                <input type="text" id="factTrailhead" required>
+                            </div>
+                            <div class="input-group full-width" id="weatherInputGroup">
+                                <label for="factWeather">
+                                    Weather Forecast
+                                    <span class="label-badge badge-fetched" id="weatherSourceLabel">Fetched</span>
+                                </label>
+                                <input type="text" id="factWeather" placeholder="e.g. Sunny, 75°F or Cool, overcast" required>
+                                
+                                <!-- Manual Weather Estimate (shown when weather fails/times out) -->
+                                <div class="manual-weather-panel hidden" id="manualWeatherPanel">
+                                    <p class="manual-weather-title">Quick estimate to continue:</p>
+                                    <div class="weather-estimate-btns" id="weatherEstimateBtns">
+                                        <button class="weather-est-btn" data-value="Cool, overcast, ~55°F" type="button">❄️ Cool</button>
+                                        <button class="weather-est-btn" data-value="Mild, partly cloudy, ~70°F" type="button">🌤 Mild</button>
+                                        <button class="weather-est-btn" data-value="Hot, sunny, ~88°F, high sun exposure" type="button">☀️ Hot</button>
+                                    </div>
+                                    <p class="manual-weather-note">Selecting an estimate will enable packing recommendations with lower confidence labeling.</p>
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label for="factSunrise">Sunrise Time</label>
+                                <input type="text" id="factSunrise" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="factSunset">Sunset Time</label>
+                                <input type="text" id="factSunset" required>
+                            </div>
+                            <div class="input-group full-width">
+                                <label for="factTerrain">Terrain Description</label>
+                                <input type="text" id="factTerrain" required>
+                            </div>
+                        </div>
+
+                        <div class="divider"></div>
+
+                        <h3>Personalize Your Hike</h3>
+                        <div class="questions-grid">
+                            <div class="input-group">
+                                <label for="hikeDay">Planned Hiking Day</label>
+                                <select id="hikeDay">
+                                    <option value="Monday">Monday</option>
+                                    <option value="Tuesday">Tuesday</option>
+                                    <option value="Wednesday">Wednesday</option>
+                                    <option value="Thursday">Thursday</option>
+                                    <option value="Friday">Friday</option>
+                                    <option value="Saturday" selected>Saturday</option>
+                                    <option value="Sunday">Sunday</option>
+                                </select>
+                            </div>
+                            
+                            <div class="input-group">
+                                <label for="startTime">Planned Start Time</label>
+                                <select id="startTime">
+                                    <option value="05:00 AM">5:00 AM (Early Dawn)</option>
+                                    <option value="06:00 AM">6:00 AM</option>
+                                    <option value="07:00 AM">7:00 AM</option>
+                                    <option value="08:00 AM" selected>8:00 AM (Recommended)</option>
+                                    <option value="09:00 AM">9:00 AM</option>
+                                    <option value="10:00 AM">10:00 AM</option>
+                                    <option value="11:00 AM">11:00 AM</option>
+                                    <option value="12:00 PM">12:00 PM (Noon)</option>
+                                    <option value="01:00 PM">1:00 PM</option>
+                                    <option value="02:00 PM">2:00 PM</option>
+                                    <option value="03:00 PM">3:00 PM (Late Start)</option>
+                                    <option value="04:00 PM">4:00 PM</option>
+                                    <option value="05:00 PM">5:00 PM</option>
+                                </select>
+                            </div>
+
+                            <div class="input-group">
+                                <label for="hikePace">Pace</label>
+                                <select id="hikePace">
+                                    <option value="slow">Slow &amp; Steady (1.5 mph)</option>
+                                    <option value="moderate" selected>Moderate (2.5 mph)</option>
+                                    <option value="fast">Fast (3.5 mph)</option>
+                                </select>
+                            </div>
+
+                            <div class="input-group">
+                                <label for="footwearPref">Footwear Preference</label>
+                                <select id="footwearPref">
+                                    <option value="hiking boots">Hiking Boots (Sturdy)</option>
+                                    <option value="trail runners" selected>Trail Runners (Lightweight)</option>
+                                    <option value="sneakers">Sneakers (Basic)</option>
+                                    <option value="sandals">Hiking Sandals</option>
+                                </select>
+                            </div>
+
+
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-generate" id="generateBtn">
+                            <span class="btn-text">Generate My Packing List</span>
+                            <span class="spinner hidden" id="generateSpinner"></span>
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- RIGHT COLUMN: Packing Recommendations -->
+            <section class="panel right-panel">
+                <div class="card placeholder-card" id="recommendationPlaceholder">
+                    <div class="placeholder-content">
+                        <svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v1"/>
+                            <path d="M18 8h4a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-4"/>
+                            <path d="M7 8V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v5"/>
+                        </svg>
+                        <h3>Your Packing List Awaits</h3>
+                        <p>Fill out the trail information and your hiking preferences to get a personalized packing recommendation.</p>
+                    </div>
+                </div>
+
+                <div class="card hidden" id="recommendationCard">
+                    <div class="rec-header">
+                        <div>
+                            <h2>Personalized Packing List</h2>
+                            <p class="hike-summary-text" id="hikeSummaryText">Mission Peak Day Hike</p>
+                        </div>
+                        <button class="btn btn-secondary btn-reset" id="resetBtn">Start Over</button>
+                    </div>
+
+                    <!-- Confidence Banner (Lower Confidence) -->
+                    <div class="confidence-banner hidden" id="confidenceBanner">
+                        <svg class="confidence-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                        <div>
+                            <strong>Lower Confidence Recommendations</strong>
+                            <p id="confidenceBannerText">Some trail or weather data was estimated. Items marked <span class="badge badge-low-confidence">Low Confidence</span> may vary from actual conditions.</p>
+                        </div>
+                    </div>
+
+                    <!-- Metrics Dashboard -->
+                    <div class="metrics-dashboard">
+                        <div class="metric-box">
+                            <div class="metric-label">Estimated Duration</div>
+                            <div class="metric-value" id="valDuration">4.5 hrs</div>
+                            <div class="metric-detail" id="lblPace">Moderate pace</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-label">Required Water</div>
+                            <div class="metric-value" id="valWater">2.5 L</div>
+                            <div class="metric-detail" id="lblWaterRate">0.5 L/hr baseline</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-label">Returns By</div>
+                            <div class="metric-value" id="valSunset">8:30 PM</div>
+                            <div class="metric-detail" id="lblSunset">Sunset time</div>
+                        </div>
+                    </div>
+
+                    <!-- Source Legend -->
+                    <div class="legend-box">
+                        <span class="legend-title">Source Legend:</span>
+                        <span class="legend-item"><span class="badge-legend badge-fetched">Fact</span> Objective Trail Fact</span>
+                        <span class="legend-item"><span class="badge-legend badge-user">Answer</span> Your Preference</span>
+                        <span class="legend-item"><span class="badge-legend badge-inferred">Advice</span> Inferred Safety Guidance</span>
+                        <span class="legend-item"><span class="badge-legend badge-low-confidence">Low Confidence</span> Weather/Trail Estimated</span>
+                    </div>
+
+                    <!-- Warning Bar (Footwear warning or Late start) -->
+                    <div class="warning-bar hidden" id="warningBar">
+                        <svg class="warning-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                        <div class="warning-text" id="warningText">Footwear warning.</div>
+                    </div>
+
+                    <!-- Packing Checklists -->
+                    <div class="packing-lists-container">
+                        <!-- MUST BRING -->
+                        <div class="list-section section-must">
+                            <h3 class="section-title">Must Bring <span class="badge-count" id="countMust">0</span></h3>
+                            <div class="checklist" id="listMust"></div>
+                        </div>
+
+                        <!-- RECOMMENDED -->
+                        <div class="list-section section-recommended">
+                            <h3 class="section-title">Recommended <span class="badge-count" id="countRec">0</span></h3>
+                            <div class="checklist" id="listRec"></div>
+                        </div>
+
+                        <!-- OPTIONAL -->
+                        <div class="list-section section-optional">
+                            <h3 class="section-title">Optional <span class="badge-count" id="countOpt">0</span></h3>
+                            <div class="checklist" id="listOpt"></div>
+
+                            <!-- Add custom optional item -->
+                            <div class="add-item-row" id="addOptionalItemRow">
+                                <input type="text" id="customItemInput" class="add-item-input" placeholder="Add your own item..." autocomplete="off">
+                                <button type="button" class="btn-add-item" id="addCustomItemBtn" aria-label="Add item">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Transparency Explanations -->
+                    <div class="divider"></div>
+                    <div class="transparency-report">
+                        <h3>Transparent Recommendation Logic</h3>
+                        
+                        <div class="report-item">
+                            <span class="badge badge-inferred">Advice</span>
+                            <div class="report-details">
+                                <strong>Hike Duration:</strong>
+                                <p id="reportDuration">Based on your pace selection and elevation gain.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="report-item">
+                            <span class="badge badge-inferred">Advice</span>
+                            <div class="report-details">
+                                <strong>Water Baseline:</strong>
+                                <p id="reportWater">Calculated as 0.5L/hr, adjusted for heat and elevation.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="report-item">
+                            <span class="badge badge-inferred">Advice</span>
+                            <div class="report-details">
+                                <strong>Sunset &amp; Safety:</strong>
+                                <p id="reportSafety">Checks if estimated return time causes risk of hiking in the dark.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="app-footer">
+        <p>&copy; 2026 Pack for This Hike. Built with Google Antigravity SDK.</p>
+    </footer>
+
+    <!-- JS -->
+    <script src="/static/js/app.js" defer></script>
+</body>
+</html>
