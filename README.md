@@ -21,8 +21,11 @@ Built with the **Google Antigravity SDK**, **FastAPI**, and modern **Vanilla HTM
 
 ## Requirements
 
-- Python 3.10+
-- A Gemini API Key (obtain from [Google AI Studio](https://aistudio.google.com/app/api-keys))
+- **Python 3.10+**
+- **Gemini API Key**: Required for AI-based fallback trail fact retrieval and packing recommendations. (Obtain from [Google AI Studio](https://aistudio.google.com/app/api-keys))
+- **Real-Time Data Mode Keys** (Optional, required only to disable mock mode and use live external data sources):
+  - **OpenWeather API Key**: Used by the weather-service MCP to fetch real-time weather forecasts. (Obtain from [OpenWeather](https://openweathermap.org/api))
+  - **Brave Search API Key**: Used by the brave-search MCP to perform web queries for arbitrary trail facts. (Obtain from [Brave Search API](https://brave.com/search/api/))
 
 ## Setup & Running Locally
 
@@ -31,12 +34,14 @@ Built with the **Google Antigravity SDK**, **FastAPI**, and modern **Vanilla HTM
    pip install -r backend/requirements.txt
    ```
 
-2. Add your Gemini API Key. You can either:
-   - Create a `.env` file in the root directory:
-     ```env
-     GEMINI_API_KEY=your_actual_api_key_here
-     ```
-   - Or paste it into the Settings Modal (top right gear icon) directly in the web browser.
+2. Configure your environment variables. Copy `.env.example` to `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+   Open the `.env` file and configure the keys:
+   - Paste your `GEMINI_API_KEY` (or enter it directly via the in-app Settings gear icon).
+   - Set `USE_REAL_TIME_DATA=true` to enable live data retrieval.
+   - If `USE_REAL_TIME_DATA` is `true`, configure your `OPENWEATHER_API_KEY` and `BRAVE_API_KEY` as well.
 
 3. Start the server:
    ```bash
